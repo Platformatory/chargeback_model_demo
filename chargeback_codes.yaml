@@ -1,0 +1,30 @@
+chargecodes:
+  - chargecode_name: Chargecode1
+    target_cluster: Cluster1        # Assumes there will be a label called 'cluster' with value equal to given value here
+    match_config:
+      - entity: client_id
+        match_type: prefix
+        match_expression: "clientA_"
+      - entity: topic
+        match_type: literal
+        match_expression: "important_topics"
+
+  - chargecode_name: Chargecode2
+    target_cluster: Cluster2
+    match_config:
+      - entity: client_id
+        match_type: regex
+        match_expression: "^clientB_.+"
+      - entity: topic
+        match_type: literal
+        match_expression: "special_topics"
+
+  - chargecode_name: Chargecode3
+    target_cluster: Cluster3
+    match_config:
+      - entity: client_id
+        match_type: literal
+        match_expression: "clientC"
+      - entity: topic
+        match_type: prefix
+        match_expression: "experimental_"

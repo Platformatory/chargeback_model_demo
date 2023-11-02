@@ -1,0 +1,171 @@
+---
+version: '2'
+services:
+  zookeeper1:
+    image: confluentinc/cp-zookeeper:7.4.0
+    hostname: zookeeper1
+    container_name: zookeeper1
+    ports:
+      - "2181:2181"
+    command: zookeeper-server-start /etc/kafka/zookeeper.properties
+    environment:
+      EXTRA_ARGS: -javaagent:/usr/share/jmx-exporter/jmx_prometheus_javaagent-0.18.0.jar=9103:/usr/share/jmx-exporter/zookeeper.yml
+    volumes:
+    - ./kafka/zookeeper1/myid:/var/lib/zookeeper/myid
+    - ./kafka/zookeeper1/zookeeper.properties:/etc/kafka/zookeeper.properties
+    - ./kafka/jmx-exporter:/usr/share/jmx-exporter
+
+  zookeeper2:
+    image: confluentinc/cp-zookeeper:7.4.0
+    hostname: zookeeper2
+    container_name: zookeeper2
+    ports:
+      - "2182:2182"
+    command: zookeeper-server-start /etc/kafka/zookeeper.properties
+    environment:
+      EXTRA_ARGS: -javaagent:/usr/share/jmx-exporter/jmx_prometheus_javaagent-0.18.0.jar=9103:/usr/share/jmx-exporter/zookeeper.yml
+    volumes:
+    - ./kafka/zookeeper2/myid:/var/lib/zookeeper/myid
+    - ./kafka/zookeeper2/zookeeper.properties:/etc/kafka/zookeeper.properties
+    - ./kafka/jmx-exporter:/usr/share/jmx-exporter
+
+  zookeeper3:
+    image: confluentinc/cp-zookeeper:7.4.0
+    hostname: zookeeper3
+    container_name: zookeeper3
+    ports:
+      - "2183:2183"
+    command: zookeeper-server-start /etc/kafka/zookeeper.properties
+    environment:
+      EXTRA_ARGS: -javaagent:/usr/share/jmx-exporter/jmx_prometheus_javaagent-0.18.0.jar=9103:/usr/share/jmx-exporter/zookeeper.yml
+    volumes:
+    - ./kafka/zookeeper3/myid:/var/lib/zookeeper/myid
+    - ./kafka/zookeeper3/zookeeper.properties:/etc/kafka/zookeeper.properties
+    - ./kafka/jmx-exporter:/usr/share/jmx-exporter
+
+  kafka1:
+    image: confluentinc/cp-kafka:7.4.0
+    hostname: kafka1
+    container_name: kafka1
+    depends_on:
+      - zookeeper1
+      - zookeeper2
+      - zookeeper3
+    ports:
+      - "29092:29092"
+      - "9092:9092"
+      - "9101:9101"
+    command: kafka-server-start /etc/kafka/server.properties
+    environment:
+      EXTRA_ARGS: -javaagent:/usr/share/jmx-exporter/jmx_prometheus_javaagent-0.18.0.jar=9101:/usr/share/jmx-exporter/kafka_broker.yml
+    volumes:
+    - ./kafka/kafka1/server.properties:/etc/kafka/server.properties
+    - ./kafka/jmx-exporter:/usr/share/jmx-exporter
+
+  kafka2:
+    image: confluentinc/cp-kafka:7.4.0
+    hostname: kafka2
+    container_name: kafka2
+    depends_on:
+      - zookeeper1
+      - zookeeper2
+      - zookeeper3
+    ports:
+      - "29093:29093"
+      - "9093:9093"
+      - "9102:9102"
+    command: kafka-server-start /etc/kafka/server.properties
+    environment:
+      EXTRA_ARGS: -javaagent:/usr/share/jmx-exporter/jmx_prometheus_javaagent-0.18.0.jar=9102:/usr/share/jmx-exporter/kafka_broker.yml
+    volumes:
+    - ./kafka/kafka2/server.properties:/etc/kafka/server.properties
+    - ./kafka/jmx-exporter:/usr/share/jmx-exporter
+  
+  kafka3:
+    image: confluentinc/cp-kafka:7.4.0
+    hostname: kafka3
+    container_name: kafka3
+    depends_on:
+      - zookeeper1
+      - zookeeper2
+      - zookeeper3
+    ports:
+      - "29094:29094"
+      - "9094:9094"
+      - "9103:9103"
+    command: kafka-server-start /etc/kafka/server.properties
+    environment:
+      EXTRA_ARGS: -javaagent:/usr/share/jmx-exporter/jmx_prometheus_javaagent-0.18.0.jar=9103:/usr/share/jmx-exporter/kafka_broker.yml
+    volumes:
+    - ./kafka/kafka3/server.properties:/etc/kafka/server.properties
+    - ./kafka/jmx-exporter:/usr/share/jmx-exporter
+  
+  kafka_client:
+    image: confluentinc/cp-kafka:7.4.0
+    hostname: kafka_client
+    container_name: kafka_client
+    depends_on:
+      - kafka1
+      - kafka2
+      - kafka3
+    ports:
+      - "10103:10103"
+    command: sleep infinity
+    environment:
+      KAFKA_OPTS: -javaagent:/usr/share/jmx-exporter/jmx_prometheus_javaagent-0.18.0.jar=10103:/usr/share/jmx-exporter/kafka_client.yml
+    volumes:
+    - ./kafka/jmx-exporter:/usr/share/jmx-exporter
+
+  prometheus:
+    image: prom/prometheus:v2.37.7
+    container_name: prometheus
+    depends_on:
+      - kafka1
+      - kafka2
+      - kafka3
+    volumes:
+      - ./kafka/prometheus:/etc/prometheus
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+    restart: unless-stopped
+    ports:
+    - 9090:9090
+    expose:
+    - 9090
+  
+  grafana:
+    image: grafana/grafana:8.5.24
+    container_name: grafana
+    depends_on:
+      - prometheus
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./kafka/grafana/provisioning:/etc/grafana/provisioning
+    environment:
+      - GF_SECURITY_ADMIN_USER=${ADMIN_USER}
+      - GF_SECURITY_ADMIN_PASSWORD=${ADMIN_PASSWORD}
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - VAR_THROUGHPUT_UNIT_RATE=${THROUGHPUT_UNIT_RATE}
+      - VAR_PARTITION_UNIT_RATE=${PARTITION_UNIT_RATE}
+      - VAR_STORAGE_UNIT_RATE=${STORAGE_UNIT_RATE}
+      - VAR_THROUGHPUT_IN_UNIT_RATE=${THROUGHPUT_IN_UNIT_RATE}
+      - VAR_THROUGHPUT_OUT_UNIT_RATE=${THROUGHPUT_OUT_UNIT_RATE}
+      - VAR_THROUGHPUT_TPS=${THROUGHPUT_TPS}
+      - VAR_STORAGE=${STORAGE}
+      - VAR_PARTITIONS_MAX=${PARTITIONS_MAX}
+      - VAR_TOTAL_COSTS=${TOTAL_COSTS}
+    restart: unless-stopped
+    ports:
+    - 3000:3000
+    expose:
+      - 3000
+
+volumes:
+    prometheus_data: {}
+    grafana_data: {}

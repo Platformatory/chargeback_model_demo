@@ -1,0 +1,48 @@
+clusters:
+  - cluster1:
+      cluster_name: Cluster1
+      cluster_id: 12345
+      throughput_units: bytes  # Supported units: "records" or "bytes"
+      currency_code: USD
+      total_costs: 5000
+      total_capacity:
+        throughput_tps: 1000
+        storage: 100000000
+        partitions_max: 1000
+      chargeback_model: cost_center
+      chargeback_config:
+        partition_unit_rate: 0.05
+        throughput_unit_rate: 0.1
+        storage_unit_rate: 0.001   # Empty configuration for cost_center
+
+  - cluster3:
+      cluster_name: Cluster3
+      cluster_id: 56789
+      throughput_units: bytes  # Supported units: "records" or "bytes"
+      currency_code: USD
+      total_costs: 5000
+      total_capacity:
+        throughput_tps: 1000
+        storage: 100000000
+        partitions_max: 1000
+      chargeback_model: usage_based
+      chargeback_config:
+        partition_unit_rate: 0.05
+        throughput_unit_rate: 0.1
+        storage_unit_rate: 0.001  # Not used in this model
+
+  - cluster2:
+      cluster_name: Cluster2
+      cluster_id: 98765
+      throughput_units: bytes  # Supported units: "records" or "bytes" (Can only be bytes for client usage based model)
+      currency_code: EUR
+      total_costs: 6000
+      total_capacity:
+        throughput_tps: 1000
+        storage: 100000000
+        partitions_max: 1000
+      chargeback_model: client_usage_based
+      chargeback_config:
+        usage_model: producer_pays  # Supported models: producer_pays, consumer_pays, producer_consumer_pays
+        throughput_in_unit_rate: 0.15
+        throughput_out_unit_rate: 0.05

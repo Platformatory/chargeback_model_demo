@@ -1,0 +1,12 @@
+groups:
+  ### BROKER THROUGHPUT RATE
+  - name: record_broker_throughput_rate
+    rules:  
+      ## Throughput related units calculation - Bytes
+      - record: broker_throughput_rate
+        expr: rate(kafka_server_brokertopicmetrics_bytesinpersec[5m])
+        labels:
+          env: "dev"
+          cluster: "demo"
+
+  

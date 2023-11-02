@@ -1,0 +1,42 @@
+global:
+  scrape_interval:     15s
+  evaluation_interval: 15s
+
+rule_files:
+  - /etc/prometheus/rules.yml
+
+scrape_configs:
+  - job_name: 'kafka-broker'
+    scrape_interval: 5s
+    metrics_path: /
+    static_configs:
+      - targets: ['kafka1:9101','kafka2:9102','kafka3:9103']
+        labels:
+          env: "dev"
+          cluster: "demo"
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: hostname
+        regex: '([^:]+)(:[0-9]+)?'
+        replacement: '${1}'
+    metric_relabel_configs:
+      - source_labels: ['cluster', 'topic']
+        separator: '_'
+        target_label: chargecode
+        regex: '^demo_demo(.*)$'
+        replacement: 'application'
+      - source_labels: ['cluster', 'topic']
+        separator: '_'
+        target_label: chargecode
+        regex: '^demo_test(.*)$'
+        replacement: 'analytics'
+      - source_labels: ['cluster', 'client_id']
+        separator: '_'
+        target_label: chargecode
+        regex: '^demo_demo(.*)$'
+        replacement: 'analytics'
+      - source_labels: ['cluster', 'client_id']
+        separator: '_'
+        target_label: chargecode
+        regex: '^demo_test(.*)$'
+        replacement: 'application'
